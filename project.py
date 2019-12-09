@@ -48,6 +48,8 @@ while(cap.isOpened()):
       plt.subplot(133), plt.plot(hist_b[0]), plt.title('blue')
 
       plt.show()
+
+      
       
 
        

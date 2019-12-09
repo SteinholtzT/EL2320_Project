@@ -12,6 +12,8 @@ N = 500
 bins = 100
 i = 1
 dt = 1
+Q = 100
+
 
 
 #While loop Parameters
@@ -37,9 +39,10 @@ while(cap.isOpened()):
 
     if ret == True:
         if captured == True:
-            s = PF.predict(s)
+            s = PF.predict(s,sq[3]/2, sq[2]/2)
             particle_frame[s[0,:], s[1,:] ] = [0, 255, 0]
             testar = PF.update(s, sq[3]/2, sq[2]/2, frame)
+
 
 
 
@@ -59,9 +62,11 @@ while(cap.isOpened()):
             print("Histogram made")
 
             # Initialise Particle Filter
-            PF = ParticleFilter(N, hist_r, max_x, max_y, bins, dt)
-            s, weights = PF.state_init()
+            PF = ParticleFilter(N, hist_r, max_x, max_y, bins, dt, Q)
+            s = PF.state_init()
             particle_frame[s[0,:], s[1,:] ] = [0, 255, 0]
+
+
             # plt.subplot(231), plt.plot(hist_r), plt.title('Red')
             # plt.subplot(232), plt.plot(hist_g), plt.title('Green')
             # plt.subplot(233), plt.plot(hist_b), plt.title('Blue')
