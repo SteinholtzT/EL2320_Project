@@ -8,11 +8,12 @@ from particle_filter import ParticleFilter
 
 
 #Partile Filter Parameters
-N = 100
-bins = 50
+N = 500
+bins = 100
+i = 1
+dt = 1
 Q = 100
 
-i = 1
 
 
 #While loop Parameters
@@ -37,11 +38,11 @@ while(cap.isOpened()):
     particle_frame = frame
 
     if ret == True:
-
         if captured == True:
             s = PF.predict(s,sq[3]/2, sq[2]/2)
             particle_frame[s[0,:], s[1,:] ] = [0, 255, 0]
-            testar = PF.update(s, sq[3]/2, sq[2]/2, frame, bins)
+            testar = PF.update(s, sq[3]/2, sq[2]/2, frame)
+
 
 
 
@@ -54,16 +55,18 @@ while(cap.isOpened()):
             sq = cv2.selectROI('Choose object', frame)
             cv2.destroyWindow('Choose object')
 
-            imag_mask = frame[sq[1]:sq[1]+sq[3], sq[0]:sq[0]+sq[2]:]
-            hist_r, bins_r = np.histogram(imag_mask[:,:,0], bins=bins, range=(0, 257), density=True)
-            # hist_b, bins_b = np.histogram(imag_mask[:,:,1], bins=bins, range=(0, 257), density=True)
-            # hist_g, bins_b = np.histogram(imag_mask[:,:,2], bins=bins, range=(0, 257), density=True)
+            imag_mask = frame[sq[1]:sq[1]+sq[3], sq[0]:sq[0]+sq[2], :]
+            hist_r, bins_r = np.histogram(imag_mask[:,:,0], bins=bins, range=(0, 255), density=True)
+            hist_b, bins_b = np.histogram(imag_mask[:,:,1], bins=bins, range=(0, 255), density=True)
+            hist_g, bins_b = np.histogram(imag_mask[:,:,2], bins=bins, range=(0, 255), density=True)
             print("Histogram made")
 
-            PF = ParticleFilter(N, hist_r, max_x, max_y, bins, Q)
+            # Initialise Particle Filter
+            PF = ParticleFilter(N, hist_r, max_x, max_y, bins, dt, Q)
             s = PF.state_init()
             particle_frame[s[0,:], s[1,:] ] = [0, 255, 0]
-            print('Particle filter initiated')
+
+
             # plt.subplot(231), plt.plot(hist_r), plt.title('Red')
             # plt.subplot(232), plt.plot(hist_g), plt.title('Green')
             # plt.subplot(233), plt.plot(hist_b), plt.title('Blue')

@@ -4,45 +4,62 @@ import matplotlib.pyplot as plt
 import time, math
 
 class ParticleFilter:
-    def __init__(self, N, target_hist, max_x, max_y, bins, Q):
+    def __init__(self, N, target_hist, max_x, max_y, bins, dt, Q):
         self.N = N
         self.hist = target_hist
         self.mx = max_x
         self.my = max_y
         self.bins = bins
+        self.dt = dt
         self.Q = Q
         self.weights = np.full( (1, self.N), 1/self.N ) 
 
 
 
+
     def state_init(self):
-        x = np.random.randint(self.mx, size=self.N)
-        y = np.random.randint(self.my, size=self.N)
-        s = np.concatenate( (x, y) )
-        s = np.reshape(s, (2, self.N))
+     
+        #State vector
+        s = np.array([  [np.random.randint(self.mx, size=self.N)],  # x
+                        [np.random.randint(self.my, size=self.N)],  # y 
+                        [np.random.randint(-10, 10, size=self.N)],  # dx
+                        [np.random.randint(-10, 10, size=self.N)]    ])    # dy
+        s = np.reshape(s, (4, self.N))
+        s = s.astype(int)
         return s
 
-
-
     def predict(self, s, Hx, Hy):
-        s[0,:] = s[0,:] + np.random.normal(0, self.Q, self.N)
-        s[1,:] = s[1,:] + np.random.normal(0, self.Q, self.N)
+        x = np.copy(s[0,:])
+        y = np.copy(s[1,:])
+        #Predict new 
+        s[0,:] = np.sum([s[0,:], s[2, :]], axis=0)
+        s[1,:] = np.sum([s[1,:], s[3, :]], axis=0)
+        s[2,:] = np.divide( np.subtract(s[0,:], x), self.dt ) 
+        s[3,:] = np.divide( np.subtract(s[1,:], y), self.dt ) 
+        s = s.astype(int)
+        
         idx_xmax = np.where(s[0,:]+Hx >= self.mx)
         idx_ymax = np.where(s[1,:]+Hy >= self.my)
         s[0, idx_xmax] = np.random.randint(self.mx, size=1)
         s[1, idx_ymax] = np.random.randint(self.my, size=1)
+        s[2, idx_xmax] = np.random.randint(-10, 10, size=1)
+        s[3, idx_ymax] = np.random.randint(-10, 10, size=1)
 
         idx_xmin = np.where(s[0,:]-Hx <= 0)
         idx_ymin = np.where(s[1,:]-Hy <= 0)
         s[0, idx_xmin] = np.random.randint(self.mx, size=1)
         s[1, idx_ymin] = np.random.randint(self.my, size=1)
-
+        s[2, idx_xmin] = np.random.randint(-10, 10, size=1)
+        s[3, idx_ymin] = np.random.randint(-10, 10, size=1)
+        s = s.astype(int)
+        print(s)
         return s
         
 
 
-    def update(self, s, Hx, Hy, frame, bins):
-        d = np.zeros(self.N)
+    def update(self, s, Hx, Hy, frame):
+        dt = np.zeros(self.N)
+                d = np.zeros(self.N)
         prob = np.zeros(self.N)
 
         for i in range(0, self.N):
@@ -73,12 +90,19 @@ class ParticleFilter:
 
         self.weights = np.multiply(self.weights, prob)
         resmpling_fac = 1/(self.N*np.sum(np.multiply(self.weights,self.weights)))
-
+        
+  
+         
+            Ht = np.sum( np.sqrt( np.multiply(self.hist, hist_r) ) )
+            dt[i] = math.sqrt(1-H)
+       
         if resampling_fac>1:
             resampling()
-
         
         return
+    
+    
+    
     
     def resampling(self):
         CDF = cumsum(self.weights)
