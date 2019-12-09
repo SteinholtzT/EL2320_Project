@@ -85,7 +85,7 @@ class ParticleFilter:
         self.weights = np.multiply( self.weights, prob)
         self.weights = np.divide(self.weights, np.sum(self.weights))
 
-        print(max([self.weights]).shape)
+        
 
         resampling_fac = 1/(self.N*np.sum(np.multiply(self.weights,self.weights)))
 
