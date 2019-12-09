@@ -3,4 +3,5 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time, math
 
-print(np.random.normal(0, 10, 5))
+
+print(np.random.normal(0, 10, 100))
