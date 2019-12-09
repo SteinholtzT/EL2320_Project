@@ -1,3 +1,6 @@
+import cv2 
+import numpy as np 
+import matplotlib.pyplot as plt
+import time, math
 
-
-np.random.normal(mu, sigma, 1000)
+print(np.random.normal(0, 10, 5))
