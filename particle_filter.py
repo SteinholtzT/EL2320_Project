@@ -54,8 +54,8 @@ class ParticleFilter:
         idx_ymin = np.where(s[1,:]-Hy < 0)
         s[0, idx_xmin] = np.random.randint(Hx, self.mx-Hx, size=len(idx_xmin))
         s[1, idx_ymin] = np.random.randint(Hy, self.my-Hy, size=len(idx_ymin))
-        s[2, idx_xmin] = np.random.randint(-10, 10, size=len(idx_xmin))
-        s[3, idx_ymin] = np.random.randint(-10, 10, size=len(idx_ymin))
+        s[2, idx_xmin] = 0#np.random.randint(-10, 10, size=len(idx_xmin))
+        s[3, idx_ymin] = 0#np.random.randint(-10, 10, size=len(idx_ymin))
         s = s.astype(int)
 
         self.s = s
@@ -65,7 +65,9 @@ class ParticleFilter:
 
     def update(self, Hx, Hy, frame):
         #dt = np.zeros(self.N)
-        d = np.zeros(self.N)
+        # d_r = np.zeros(self.N)
+        # d_g = np.zeros(self.N)
+        # d_b = np.zeros(self.N)
         prob = np.zeros(self.N)
 
         for i in range(0, self.N):
@@ -73,25 +75,34 @@ class ParticleFilter:
             msk_idy = np.arange(self.s[1,i] - Hy,self.s[1,i] + Hy)
 
             imag_mask = frame[int(msk_idx[0]):int(msk_idx[-1]), int(msk_idy[0]):int(msk_idy[-1]) , :]
+            hist_b, bins_r = np.histogram(imag_mask[:,:,0], bins=self.bins, range=(0, 255), density=True)
+            hist_g, bins_r = np.histogram(imag_mask[:,:,1], bins=self.bins, range=(0, 255), density=True)
             hist_r, bins_r = np.histogram(imag_mask[:,:,2], bins=self.bins, range=(0, 255), density=True)
             
             
-            H = np.sum(np.sqrt(np.multiply(self.hist, hist_r)))
+            H_r = np.sum(np.sqrt(np.multiply(self.hist, hist_r)))
+            H_g = np.sum(np.sqrt(np.multiply(self.hist, hist_g)))
+            H_b = np.sum(np.sqrt(np.multiply(self.hist, hist_b)))
 
-            d[i] = math.sqrt( 1 -  H)
-            prob[i] = (1/(self.Q)*math.sqrt(2*math.pi))*math.exp(-d[i]/(2*self.Q**2))
+            d_r = math.sqrt( 1 -  H_r)
+            d_g = math.sqrt( 1 -  H_g)
+            d_b = math.sqrt( 1 -  H_b)
+
+            prob_r = (1/(self.Q)*math.sqrt(2*math.pi))*math.exp(-d_r/(2*self.Q**2))
+            prob_g = (1/(self.Q)*math.sqrt(2*math.pi))*math.exp(-d_g/(2*self.Q**2))
+            prob_b = (1/(self.Q)*math.sqrt(2*math.pi))*math.exp(-d_b/(2*self.Q**2))
+
+            prob[i] = prob_r*prob_g*prob_b
         
             
         self.weights = np.multiply( self.weights, prob)
         self.weights = np.divide(self.weights, np.sum(self.weights))
 
-        print('max = ' ,max(self.weights[0]))
-        print('min = ' ,min(self.weights[0]))
-        print(' ')
+        # print('max = ' ,max(self.weights[0]))
+        # print('min = ' ,min(self.weights[0]))
+        # print(' ')
 
         resampling_fac = 1/(self.N*np.sum(np.multiply(self.weights,self.weights)))
-
-        
         
         s_esti = np.zeros(2)
         s_esti[0] = np.sum( np.multiply(self.weights, self.s[0, :] ))
@@ -102,7 +113,11 @@ class ParticleFilter:
         idx = idx.astype(int)
         idy = idy.astype(int)
 
-        self.s = self.resampling(self.s)
+        print(max(self.weights[0]))
+        #print(resampling_fac)
+        if resampling_fac<0.95:
+            print('Resampling')
+            self.s = self.resampling(self.s)
 
         return idx, idy
     

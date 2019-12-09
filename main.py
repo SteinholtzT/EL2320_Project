@@ -8,11 +8,11 @@ from particle_filter import ParticleFilter
 
 
 #Partile Filter Parameters
-N = 100
+N = 200
 bins = 50
 i = 1
 dt = 1/(25*10**-3)
-Q = 5
+Q = 0.4
 
 
 
