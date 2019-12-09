@@ -19,6 +19,9 @@ class particle_filter:
         weights = 0
 
     def predict(self, particles, measurment):
+        cov_Q = np.random.normal(0, Q, 1000)
+        
+
         error = 
 
 

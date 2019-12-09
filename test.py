@@ -1,2 +1,3 @@
-x = 2
- 
+
+
+np.random.normal(mu, sigma, 1000)
