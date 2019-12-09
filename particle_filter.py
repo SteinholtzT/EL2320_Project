@@ -62,8 +62,6 @@ class ParticleFilter:
             imag_mask = frame[int(msk_idx[0]):int(msk_idx[-1]), int(msk_idy[0]):int(msk_idy[-1]) , :]
             hist_r, bins_r = np.histogram(imag_mask[:,:,0], bins=self.bins, range=(0, 257), density=True)
         
-        # plt.plot(hist_r), plt.title('Red')
-        # plt.show()
     
             H = np.sum(np.sqrt(np.multiply(self.hist, hist_r)))
 
@@ -72,23 +70,22 @@ class ParticleFilter:
             
 
         self.weights = np.multiply(self.weights, prob)
-        resmpling_fac = 1/(self.N*np.sum(np.multiply(self.weights,self.weights)))
+        resampling_fac = 1/(self.N*np.sum(np.multiply(self.weights,self.weights)))
 
         if resampling_fac>1:
-            resampling()
-
+            self.resampling()
         
         return
     
-    def resampling(self):
-        CDF = cumsum(self.weights)
+    def resampling(self, s_bar):
+        CDF = np.cumsum(self.weights)
         r0 = np.random.random_sample()/self.N
     
-    for m in range(self.N):  
-        
-        i = CDF>=(r0+(m-1)/self.N)
-        print(i)
-        #S(:, m)=S_bar(:, i)
+        for m in range(self.N):  
+
+            i = CDF>=(r0+(m-1)/self.N)
+            print(i)
+            s[:, m]=s_bar[:, i]
     
-    
+        self.weights = np.full( (1, self.N), 1/self.N )
     #S(4, :) = 1/M
