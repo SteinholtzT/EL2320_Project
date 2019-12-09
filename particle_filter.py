@@ -23,8 +23,8 @@ class ParticleFilter:
         #State vector
         self.s = np.array([  [np.random.randint(self.mx, size=self.N)],  # x
                         [np.random.randint(self.my, size=self.N)],  # y 
-                        [np.random.randint(-10, 10, size=self.N)],  # dx
-                        [np.random.randint(-10, 10, size=self.N)]    ])    # dy
+                        [np.zeros(self.N)],  # dx
+                        [np.zeros(self.N)]    ])    # dy
         self.s = np.reshape(self.s, (4, self.N))
         self.s = self.s.astype(int)
         return self.s
@@ -46,8 +46,8 @@ class ParticleFilter:
         idx_ymax = np.where(s[1,:]+Hy > self.my-1)
         s[0, idx_xmax] = np.random.randint(Hx, self.mx-Hx, size=len(idx_xmax))
         s[1, idx_ymax] = np.random.randint(Hx, self.my-Hy, size=len(idx_ymax))
-        s[2, idx_xmax] = np.random.randint(-10, 10, size=len(idx_xmax))
-        s[3, idx_ymax] = np.random.randint(-10, 10, size=len(idx_ymax))
+        s[2, idx_xmax] = 0#np.random.randint(-10, 10, size=len(idx_xmax))
+        s[3, idx_ymax] = 0#np.random.randint(-10, 10, size=len(idx_ymax))
 
 
         idx_xmin = np.where(s[0,:]-Hx < 0)
@@ -73,9 +73,9 @@ class ParticleFilter:
             msk_idy = np.arange(self.s[1,i] - Hy,self.s[1,i] + Hy)
 
             imag_mask = frame[int(msk_idx[0]):int(msk_idx[-1]), int(msk_idy[0]):int(msk_idy[-1]) , :]
-            hist_r, bins_r = np.histogram(imag_mask[:,:,0], bins=self.bins, range=(0, 255), density=True)
+            hist_r, bins_r = np.histogram(imag_mask[:,:,2], bins=self.bins, range=(0, 255), density=True)
             
-    
+            
             H = np.sum(np.sqrt(np.multiply(self.hist, hist_r)))
 
             d[i] = math.sqrt( 1 -  H)
@@ -85,12 +85,13 @@ class ParticleFilter:
         self.weights = np.multiply( self.weights, prob)
         self.weights = np.divide(self.weights, np.sum(self.weights))
 
-        
+        print('max = ' ,max(self.weights[0]))
+        print('min = ' ,min(self.weights[0]))
+        print(' ')
 
         resampling_fac = 1/(self.N*np.sum(np.multiply(self.weights,self.weights)))
 
         
-        self.s = self.resampling(self.s)
         
         s_esti = np.zeros(2)
         s_esti[0] = np.sum( np.multiply(self.weights, self.s[0, :] ))
@@ -100,6 +101,8 @@ class ParticleFilter:
         idy = np.arange(s_esti[1]-Hy, s_esti[1]+Hy) 
         idx = idx.astype(int)
         idy = idy.astype(int)
+
+        self.s = self.resampling(self.s)
 
         return idx, idy
     
@@ -112,8 +115,7 @@ class ParticleFilter:
         s = np.zeros(s_bar.shape)
 
         for m in range(self.N):  
-
-            i = np.where(CDF>=((r0+(m))/self.N))
+            i = np.where(CDF>=((r0+(m-1))/self.N))
             s[:, m]=s_bar[:, i[0][0]]
 
         self.weights = np.full( (1, self.N), 1/self.N )
