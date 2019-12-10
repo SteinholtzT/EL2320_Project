@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import time, math
 
 class ParticleFilter:
-    def __init__(self, N, target_hist, max_x, max_y, bins, dt, Q):
+    def __init__(self, N, target_hist, max_x, max_y, bins, dt, Q, R):
         self.N = N
         self.hist = target_hist
         self.mx = max_x
@@ -13,6 +13,7 @@ class ParticleFilter:
         self.dt = dt
         self.Q = Q
         self.weights = np.full( (1, self.N), 1/self.N )
+        self.R = R
         self.s = None 
 
 
@@ -88,9 +89,9 @@ class ParticleFilter:
             d_g = math.sqrt( 1 -  H_g)
             d_b = math.sqrt( 1 -  H_b)
 
-            prob_r = (1/(self.Q)*math.sqrt(2*math.pi))*math.exp(-d_r/(2*self.Q**2))
-            prob_g = (1/(self.Q)*math.sqrt(2*math.pi))*math.exp(-d_g/(2*self.Q**2))
-            prob_b = (1/(self.Q)*math.sqrt(2*math.pi))*math.exp(-d_b/(2*self.Q**2))
+            prob_r = (1/(self.R)*math.sqrt(2*math.pi))*math.exp(-d_r/(2*self.R**2))
+            prob_g = (1/(self.Q)*math.sqrt(2*math.pi))*math.exp(-d_g/(2*self.R**2))
+            prob_b = (1/(self.Q)*math.sqrt(2*math.pi))*math.exp(-d_b/(2*self.R**2))
 
             prob[i] = prob_r*prob_g*prob_b
         
