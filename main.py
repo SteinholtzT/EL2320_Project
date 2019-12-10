@@ -8,12 +8,14 @@ from particle_filter import ParticleFilter
 
 
 #Partile Filter Parameters
+
 N = 100
 bins = 50
 i = 1
 dt = 1/(25*10**-3)
 Q = 0.2
 R = 2
+
 
 
 
@@ -43,11 +45,13 @@ while(cap.isOpened()):
         if captured == True:
             s = PF.predict(sq[3]/2, sq[2]/2)
             particle_frame[s[0,:], s[1,:] ] = [0, 255, 0]
+
             idx, idy = PF.update(sq[3]/2, sq[2]/2, gray)
             frame[ idx[0], idy[0]:idy[-1] ] = [255, 0, 0]
             frame[ idx[-1], idy[0]:idy[-1] ] = [255, 0, 0]
             frame[ idx[0]:idx[-1], idy[0] ] = [255, 0, 0]
             frame[ idx[0]:idx[-1], idy[-1] ] = [255, 0, 0]
+
 
 
 
