@@ -4,9 +4,11 @@ import matplotlib.pyplot as plt
 import time, math
 
 class ParticleFilter:
-    def __init__(self, N, target_hist, max_x, max_y, bins, dt, Q, R):
+    def __init__(self, N, target_hist_h, target_hist_s, target_hist_v, max_x, max_y, bins, dt, Q, R):
         self.N = N
-        self.hist = target_hist
+        self.hist_th = target_hist_h
+        self.hist_ts = target_hist_s
+        self.hist_tv = target_hist_v
         self.mx = max_x
         self.my = max_y
         self.bins = bins
@@ -15,6 +17,7 @@ class ParticleFilter:
         self.Q = Q
         self.weights = np.full( (1, self.N), 1/self.N )
         self.s = None 
+        self.meanp = 0
 
 
 
@@ -48,8 +51,8 @@ class ParticleFilter:
         
         idx_xmax = np.where(s[0,:]+Hx > self.mx-1)
         idx_ymax = np.where(s[1,:]+Hy > self.my-1)
-        s[0, idx_xmax] = np.random.randint(Hx, self.mx-Hx, size=len(idx_xmax))
-        s[1, idx_ymax] = np.random.randint(Hx, self.my-Hy, size=len(idx_ymax))
+        s[0, idx_xmax] = np.random.randint(Hx, self.mx-Hx, len(idx_xmax[0]))
+        s[1, idx_ymax] = np.random.randint(Hx, self.my-Hy, len(idx_ymax[0]))
 
         s[2, idx_xmax] = 0#np.random.randint(-10, 10, size=len(idx_xmax))
         s[3, idx_ymax] = 0#np.random.randint(-10, 10, size=len(idx_ymax))
@@ -58,8 +61,8 @@ class ParticleFilter:
 
         idx_xmin = np.where(s[0,:]-Hx < 0)
         idx_ymin = np.where(s[1,:]-Hy < 0)
-        s[0, idx_xmin] = np.random.randint(Hx, self.mx-Hx, size=len(idx_xmin))
-        s[1, idx_ymin] = np.random.randint(Hy, self.my-Hy, size=len(idx_ymin))
+        s[0, idx_xmin] = np.random.randint(Hx, self.mx-Hx, len(idx_xmin[0]))
+        s[1, idx_ymin] = np.random.randint(Hy, self.my-Hy, len(idx_ymin[0]))
 
         s[2, idx_xmin] = 0#np.random.randint(-10, 10, size=len(idx_xmin))
         s[3, idx_ymin] = 0#np.random.randint(-10, 10, size=len(idx_ymin))
@@ -72,64 +75,58 @@ class ParticleFilter:
 
 
     def update(self, Hx, Hy, frame):
-        #dt = np.zeros(self.N)
-        # d_r = np.zeros(self.N)
-        # d_g = np.zeros(self.N)
-        # d_b = np.zeros(self.N)
+        d_r = np.zeros(self.N)
+        d_g = np.zeros(self.N)
+        d_b = np.zeros(self.N)
         prob = np.zeros(self.N)
 
         for i in range(0, self.N):
             msk_idx = np.arange(self.s[0,i] - Hx,self.s[0,i] + Hx)
             msk_idy = np.arange(self.s[1,i] - Hy,self.s[1,i] + Hy)
 
-
             imag_mask = frame[int(msk_idx[0]):int(msk_idx[-1]), int(msk_idy[0]):int(msk_idy[-1]) , :]
-            hist_b, bins_r = np.histogram(imag_mask[:,:,0], bins=self.bins, range=(0, 255), density=True)
-            hist_g, bins_r = np.histogram(imag_mask[:,:,1], bins=self.bins, range=(0, 255), density=True)
-            hist_r, bins_r = np.histogram(imag_mask[:,:,2], bins=self.bins, range=(0, 255), density=True)
+            # imag_mask = hsv[int(msk_idx[0]):int(msk_idx[-1]), int(msk_idy[0]):int(msk_idy[-1]), :]
+            hist_h, bins_r = np.histogram(imag_mask[:,:,0], bins=self.bins, range=(0, 360), density=True)
+            hist_s, bins_r = np.histogram(imag_mask[:,:,1], bins=self.bins, range=(0, 360), density=True)
+            hist_v, bins_r = np.histogram(imag_mask[:,:,2], bins=self.bins, range=(0, 360), density=True)
             
-            
-            H_r = np.sum(np.sqrt(np.multiply(self.hist, hist_r)))
-            H_g = np.sum(np.sqrt(np.multiply(self.hist, hist_g)))
-            H_b = np.sum(np.sqrt(np.multiply(self.hist, hist_b)))
+            H_h = np.sum(np.sqrt(np.multiply(self.hist_th, hist_h)))
+            H_s = np.sum(np.sqrt(np.multiply(self.hist_ts, hist_s)))
+            H_v = np.sum(np.sqrt(np.multiply(self.hist_tv, hist_v)))
 
-            d_r = math.sqrt( 1 -  H_r)
-            d_g = math.sqrt( 1 -  H_g)
-            d_b = math.sqrt( 1 -  H_b)
+            d_h = math.sqrt( 1 -  H_h)
+            d_s = math.sqrt( 1 -  H_s)
+            d_v = math.sqrt( 1 -  H_v)
 
-            prob_r = (1/(self.R)*math.sqrt(2*math.pi))*math.exp(-d_r/(2*self.R**2))
-            prob_g = (1/(self.Q)*math.sqrt(2*math.pi))*math.exp(-d_g/(2*self.R**2))
-            prob_b = (1/(self.Q)*math.sqrt(2*math.pi))*math.exp(-d_b/(2*self.R**2))
+            prob_h = (1/(self.Q**5)*math.sqrt(2*math.pi))*math.exp(-d_h/(2*self.Q**2))
+            prob_s = (1/(self.Q**5)*math.sqrt(2*math.pi))*math.exp(-d_s/(2*self.Q**2))
+            prob_v = (1/(self.Q**5)*math.sqrt(2*math.pi))*math.exp(-d_v/(2*self.Q**2))
 
-            prob[i] = prob_r*prob_g*prob_b
+            prob[i] = prob_h*prob_s*prob_v
         
-            
+        
         self.weights = np.multiply( self.weights, prob)
         self.weights = np.divide(self.weights, np.sum(self.weights))
 
-        # print('max = ' ,max(self.weights[0]))
-        # print('min = ' ,min(self.weights[0]))
-        # print(' ')
 
         resampling_fac = 1/(self.N*np.sum(np.multiply(self.weights,self.weights)))
+        if resampling_fac<1: 
+            self.s = self.resampling(self.s)
         
         s_esti = np.zeros(2)
         s_esti[0] = np.sum( np.multiply(self.weights, self.s[0, :] ))
         s_esti[1] = np.sum( np.multiply(self.weights, self.s[1, :] ))
+        
 
-        idx = np.array([   [s_esti[0]-Hx, s_esti[0]+Hx],
-                            [s_esti[1]-Hy, s_esti[1]+Hx] ])
+        idx = np.array([[s_esti[0]-Hx, s_esti[0]+Hx],
+                        [s_esti[1]-Hy, s_esti[1]+Hy]])
+
+        idx[0, np.where(idx[0,:]<0)] = 1
+        idx[0, np.where(idx[0,:]>=self.mx)] = self.mx - 1
+        idx[1, np.where(idx[1,:]<0)] = 1
+        idx[1, np.where(idx[1,:]>=self.my)] = self.my - 1
+            
         idx = idx.astype(int)
-        # idy = np.arange(s_esti[1]-Hy, s_esti[1]+Hy) 
-        # idx = idx.astype(int)
-        # idy = idy.astype(int)
-
-        #print(max(self.weights[0]))
-        #print(resampling_fac)
-        if resampling_fac<0.95:
-            #print('Resampling')
-            self.s = self.resampling(self.s)
-
         return idx
     
     
@@ -143,7 +140,6 @@ class ParticleFilter:
         for m in range(self.N):  
             i = np.where(CDF>=((r0+(m-1))/self.N))
             s[:, m]=s_bar[:, i[0][0]]
-
         self.weights = np.full( (1, self.N), 1/self.N )
         return s
 
