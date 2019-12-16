@@ -85,22 +85,46 @@ class ParticleFilter:
             msk_idy = np.arange(self.s[1,i] - Hy,self.s[1,i] + Hy)
 
             imag_mask = frame[int(msk_idx[0]):int(msk_idx[-1]), int(msk_idy[0]):int(msk_idy[-1]) , :]
-            # imag_mask = hsv[int(msk_idx[0]):int(msk_idx[-1]), int(msk_idy[0]):int(msk_idy[-1]), :]
-            hist_h, bins_r = np.histogram(imag_mask[:,:,0], bins=self.bins, range=(0, 360), density=True)
-            hist_s, bins_r = np.histogram(imag_mask[:,:,1], bins=self.bins, range=(0, 360), density=True)
-            hist_v, bins_r = np.histogram(imag_mask[:,:,2], bins=self.bins, range=(0, 360), density=True)
+            #imag_mask = hsv[int(msk_idx[0]):int(msk_idx[-1]), int(msk_idy[0]):int(msk_idy[-1]), :]
             
-            H_h = np.sum(np.sqrt(np.multiply(self.hist_th, hist_h)))
-            H_s = np.sum(np.sqrt(np.multiply(self.hist_ts, hist_s)))
-            H_v = np.sum(np.sqrt(np.multiply(self.hist_tv, hist_v)))
+            hist_h = cv2.calcHist([imag_mask[:,:,0]],[0],None,[self.bins],[0,360])
+            hist_s = cv2.calcHist([imag_mask[:,:,1]],[0],None,[self.bins],[0,360])
+            hist_v = cv2.calcHist([imag_mask[:,:,2]],[0],None,[self.bins],[0,360])
 
-            d_h = math.sqrt( 1 -  H_h)
-            d_s = math.sqrt( 1 -  H_s)
-            d_v = math.sqrt( 1 -  H_v)
+            # hist_h = np.divide(hist_h, np.sum(hist_h)*self.bins)
+            # hist_s = np.divide(hist_s, np.sum(hist_s)*1000)
+            # hist_v = np.divide(hist_v, np.sum(hist_v)*1000)
+            #print(hist_h)
 
-            prob_h = (1/(self.Q**5)*math.sqrt(2*math.pi))*math.exp(-d_h/(2*self.Q**2))
-            prob_s = (1/(self.Q**5)*math.sqrt(2*math.pi))*math.exp(-d_s/(2*self.Q**2))
-            prob_v = (1/(self.Q**5)*math.sqrt(2*math.pi))*math.exp(-d_v/(2*self.Q**2))
+
+            #hist_h, bins_r = np.histogram(imag_mask[:,:,0], bins=self.bins, range=(0, 360), density=True)
+            #hist_s, bins_r = np.histogram(imag_mask[:,:,1], bins=self.bins, range=(0, 360), density=True)
+            #hist_v, bins_r = np.histogram(imag_mask[:,:,2], bins=self.bins, range=(0, 360), density=True)'
+
+            #print(hist_h)
+            
+            # H_h = np.sum(np.sqrt(np.multiply(self.hist_th, hist_h)))
+            # H_s = np.sum(np.sqrt(np.multiply(self.hist_ts, hist_s)))
+            # H_v = np.sum(np.sqrt(np.multiply(self.hist_tv, hist_v)))
+
+            # print(H_h)
+            # print(H_s)
+            # print(H_v)
+            # print('')
+
+            # d_h = math.sqrt( 1 -  H_h)
+            # d_s = math.sqrt( 1 -  H_s)
+            # d_v = math.sqrt( 1 -  H_v)
+            compare_method = cv2.HISTCMP_BHATTACHARYYA
+
+            d_h = cv2.compareHist(self.hist_th, hist_h, compare_method)
+            d_s = cv2.compareHist(self.hist_ts, hist_s, compare_method)
+            d_v = cv2.compareHist(self.hist_tv, hist_v, compare_method)
+            
+
+            prob_h = (1/(self.Q)*math.sqrt(2*math.pi))*math.exp(-d_h/(2*self.Q**2))
+            prob_s = (1/(self.Q)*math.sqrt(2*math.pi))*math.exp(-d_s/(2*self.Q**2))
+            prob_v = (1/(self.Q)*math.sqrt(2*math.pi))*math.exp(-d_v/(2*self.Q**2))
 
             prob[i] = prob_h*prob_s*prob_v
         

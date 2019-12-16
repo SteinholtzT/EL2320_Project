@@ -8,12 +8,12 @@ from particle_filter import ParticleFilter
 
 
 #Partile Filter Parameters
-N = 80
-bins = 180
+N = 300
+bins = 180*2
 i = 1
-dt = 1/(25*10**-3)
-Q = 0.05 # process noise
-R = 10 # measurment noise
+dt = 1/(30)
+Q = 0.3 # process noise
+R = 0.2 # measurment noise
 predict_n = 1 # number of frames before predict
 
 #While loop Parameters
@@ -30,8 +30,8 @@ sample = 0
 
 cap = cv2.VideoCapture(0)
 
-# url = 'http://192.168.0.100:4747/video'
-# cap = cv2.VideoCapture(url)
+#url = 'http://192.168.0.100:4747/video'
+#cap = cv2.VideoCapture(url)
 
 
 # Check if camera opened successfully 
@@ -54,11 +54,10 @@ while(cap.isOpened()):
         if sample!=predict_n and captured == True:
             s = PF.predict(sq[3]/2, sq[2]/2)
             particle_frame[s[0,:], s[1,:] ] = [0, 255, 0]
-
             idx, idy = PF.update(sq[3]/2, sq[2]/2, hsv)
             frame[ idx[0], idy[0]:idy[-1] ] = [255, 0, 0]
             frame[ idx[-1], idy[0]:idy[-1] ] = [255, 0, 0]
-            frame[ idx[0]:idx[-1], idy[0] ] = [255, 0, 0]
+            frame[ idx[0]:idx[-1], idy[0] ] = [255, 0, 0] 
             frame[ idx[0]:idx[-1], idy[-1] ] = [255, 0, 0]
             sample += 1
         elif sample == predict_n and captured == True:
@@ -83,9 +82,14 @@ while(cap.isOpened()):
             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
             # imag_mask = frame[sq[1]:sq[1]+sq[3], sq[0]:sq[0]+sq[2]]
             imag_mask = hsv[sq[1]:sq[1]+sq[3], sq[0]:sq[0]+sq[2]]
-            hist_h, bins_r = np.histogram(imag_mask[:,:,0], bins=bins, range=(0, 360), density=True)
-            hist_s, bins_b = np.histogram(imag_mask[:,:,1], bins=bins, range=(0, 360), density=True)
-            hist_v, bins_g = np.histogram(imag_mask[:,:,2], bins=bins, range=(0, 255), density=True)
+            # hist_h, bins_r = np.histogram(imag_mask[:,:,0], bins=bins, range=(0, 360), density=True)
+            # hist_s, bins_b = np.histogram(imag_mask[:,:,1], bins=bins, range=(0, 360), density=True)
+            # hist_v, bins_g = np.histogram(imag_mask[:,:,2], bins=bins, range=(0, 360), density=True)
+
+            hist_h = cv2.calcHist([imag_mask[:,:,0]],[0],None,[bins],[0,360])
+            hist_s = cv2.calcHist([imag_mask[:,:,1]],[0],None,[bins],[0,360])
+            hist_v = cv2.calcHist([imag_mask[:,:,2]],[0],None,[bins],[0,360])
+
             print("Histogram made")
 
             # Initialise Particle Filter
