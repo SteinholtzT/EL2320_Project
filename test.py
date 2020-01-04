@@ -4,3 +4,4 @@ import matplotlib.pyplot as plt
 import time, math
 
 
+print(np.zeros(10))

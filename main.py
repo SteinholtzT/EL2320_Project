@@ -8,11 +8,14 @@ from particle_filter import ParticleFilter
 
 
 #Partile Filter Parameters
-N = 500
-bins = 100
+
+N = 100
+bins = 50
 i = 1
-dt = 1
-Q = 100
+dt = 1/(25*10**-3)
+Q = 0.2
+R = 2
+
 
 
 
@@ -36,12 +39,19 @@ while(cap.isOpened()):
     ret, frame = cap.read()
     max_x, max_y, z = np.shape(frame)
     particle_frame = frame
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
     if ret == True:
         if captured == True:
-            s = PF.predict(s,sq[3]/2, sq[2]/2)
+            s = PF.predict(sq[3]/2, sq[2]/2)
             particle_frame[s[0,:], s[1,:] ] = [0, 255, 0]
-            testar = PF.update(s, sq[3]/2, sq[2]/2, frame)
+
+            idx, idy = PF.update(sq[3]/2, sq[2]/2, gray)
+            frame[ idx[0], idy[0]:idy[-1] ] = [255, 0, 0]
+            frame[ idx[-1], idy[0]:idy[-1] ] = [255, 0, 0]
+            frame[ idx[0]:idx[-1], idy[0] ] = [255, 0, 0]
+            frame[ idx[0]:idx[-1], idy[-1] ] = [255, 0, 0]
+
 
 
 
@@ -52,17 +62,18 @@ while(cap.isOpened()):
   # Press C
         if cv2.waitKey(25) & 0xFF == ord('c'):
             captured = True
-            sq = cv2.selectROI('Choose object', frame)
+            sq = cv2.selectROI('Choose object', gray)
             cv2.destroyWindow('Choose object')
 
-            imag_mask = frame[sq[1]:sq[1]+sq[3], sq[0]:sq[0]+sq[2], :]
-            hist_r, bins_r = np.histogram(imag_mask[:,:,0], bins=bins, range=(0, 255), density=True)
-            hist_b, bins_b = np.histogram(imag_mask[:,:,1], bins=bins, range=(0, 255), density=True)
-            hist_g, bins_b = np.histogram(imag_mask[:,:,2], bins=bins, range=(0, 255), density=True)
+            imag_mask = gray[sq[1]:sq[1]+sq[3], sq[0]:sq[0]+sq[2]]
+            print(np.shape(imag_mask))
+            hist_r, bins_r = np.histogram(imag_mask[:,:], bins=bins, range=(0, 255), density=True)
+            #hist_b, bins_b = np.histogram(imag_mask[:,:,1], bins=bins, range=(0, 255), density=True)
+            #hist_g, bins_b = np.histogram(imag_mask[:,:,2], bins=bins, range=(0, 255), density=True)
             print("Histogram made")
 
             # Initialise Particle Filter
-            PF = ParticleFilter(N, hist_r, max_x, max_y, bins, dt, Q)
+            PF = ParticleFilter(N, hist_r, max_x, max_y, bins, dt, Q, R)
             s = PF.state_init()
             particle_frame[s[0,:], s[1,:] ] = [0, 255, 0]
 
