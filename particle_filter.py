@@ -39,7 +39,7 @@ class ParticleFilter:
         s = self.s
         x = np.copy(self.s[0,:])
         y = np.copy(self.s[1,:])
-
+ 
         #Predict new 
 
         s[0,:] = np.sum([s[0,:], s[2, :]], axis=0) + np.random.normal(0, self.R, self.N)
@@ -49,23 +49,13 @@ class ParticleFilter:
 
         s = s.astype(int)
         
-        idx_xmax = np.where(s[0,:]+Hx > self.mx-1)
-        idx_ymax = np.where(s[1,:]+Hy > self.my-1)
+        idx_xmax = np.where((s[0,:]+Hx > self.mx-1) | (s[0,:]-Hx < 0))
+        idx_ymax = np.where((s[1,:]+Hy > self.my-1) | (s[1,:]-Hy < 0))
+
         s[0, idx_xmax] = np.random.randint(Hx, self.mx-Hx, len(idx_xmax[0]))
         s[1, idx_ymax] = np.random.randint(Hx, self.my-Hy, len(idx_ymax[0]))
-
-        s[2, idx_xmax] = 0#np.random.randint(-10, 10, size=len(idx_xmax))
-        s[3, idx_ymax] = 0#np.random.randint(-10, 10, size=len(idx_ymax))
-
-
-
-        idx_xmin = np.where(s[0,:]-Hx < 0)
-        idx_ymin = np.where(s[1,:]-Hy < 0)
-        s[0, idx_xmin] = np.random.randint(Hx, self.mx-Hx, len(idx_xmin[0]))
-        s[1, idx_ymin] = np.random.randint(Hy, self.my-Hy, len(idx_ymin[0]))
-
-        s[2, idx_xmin] = 0#np.random.randint(-10, 10, size=len(idx_xmin))
-        s[3, idx_ymin] = 0#np.random.randint(-10, 10, size=len(idx_ymin))
+        s[2, idx_xmax] = 0
+        s[3, idx_ymax] = 0
 
         s = s.astype(int)
 
@@ -85,36 +75,11 @@ class ParticleFilter:
             msk_idy = np.arange(self.s[1,i] - Hy,self.s[1,i] + Hy)
 
             imag_mask = frame[int(msk_idx[0]):int(msk_idx[-1]), int(msk_idy[0]):int(msk_idy[-1]) , :]
-            #imag_mask = hsv[int(msk_idx[0]):int(msk_idx[-1]), int(msk_idy[0]):int(msk_idy[-1]), :]
             
             hist_h = cv2.calcHist([imag_mask[:,:,0]],[0],None,[self.bins],[0,360])
             hist_s = cv2.calcHist([imag_mask[:,:,1]],[0],None,[self.bins],[0,360])
             hist_v = cv2.calcHist([imag_mask[:,:,2]],[0],None,[self.bins],[0,360])
 
-            # hist_h = np.divide(hist_h, np.sum(hist_h)*self.bins)
-            # hist_s = np.divide(hist_s, np.sum(hist_s)*1000)
-            # hist_v = np.divide(hist_v, np.sum(hist_v)*1000)
-            #print(hist_h)
-
-
-            #hist_h, bins_r = np.histogram(imag_mask[:,:,0], bins=self.bins, range=(0, 360), density=True)
-            #hist_s, bins_r = np.histogram(imag_mask[:,:,1], bins=self.bins, range=(0, 360), density=True)
-            #hist_v, bins_r = np.histogram(imag_mask[:,:,2], bins=self.bins, range=(0, 360), density=True)'
-
-            #print(hist_h)
-            
-            # H_h = np.sum(np.sqrt(np.multiply(self.hist_th, hist_h)))
-            # H_s = np.sum(np.sqrt(np.multiply(self.hist_ts, hist_s)))
-            # H_v = np.sum(np.sqrt(np.multiply(self.hist_tv, hist_v)))
-
-            # print(H_h)
-            # print(H_s)
-            # print(H_v)
-            # print('')
-
-            # d_h = math.sqrt( 1 -  H_h)
-            # d_s = math.sqrt( 1 -  H_s)
-            # d_v = math.sqrt( 1 -  H_v)
             compare_method = cv2.HISTCMP_BHATTACHARYYA
 
             d_h = cv2.compareHist(self.hist_th, hist_h, compare_method)
@@ -122,9 +87,9 @@ class ParticleFilter:
             d_v = cv2.compareHist(self.hist_tv, hist_v, compare_method)
             
 
-            prob_h = (1/(self.Q)*math.sqrt(2*math.pi))*math.exp(-d_h/(2*self.Q**2))
-            prob_s = (1/(self.Q)*math.sqrt(2*math.pi))*math.exp(-d_s/(2*self.Q**2))
-            prob_v = (1/(self.Q)*math.sqrt(2*math.pi))*math.exp(-d_v/(2*self.Q**2))
+            prob_h = (1/*math.sqrt(2*math.pi*self.Q))*math.exp(-d_h/(2*self.Q))
+            prob_s = (1/*math.sqrt(2*math.pi*self.Q))*math.exp(-d_s/(2*self.Q))
+            prob_v = (1/*math.sqrt(2*math.pi*self.Q))*math.exp(-d_v/(2*self.Q))
 
             prob[i] = prob_h*prob_s*prob_v
         
@@ -165,5 +130,6 @@ class ParticleFilter:
             i = np.where(CDF>=((r0+(m-1))/self.N))
             s[:, m]=s_bar[:, i[0][0]]
         self.weights = np.full( (1, self.N), 1/self.N )
+        
         return s
 
